@@ -1,0 +1,58 @@
+@import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-primary-green: #2F5233;
+  --color-primary-green-light: #3a6640;
+  --color-secondary-green: #4ADE80;
+  --color-bg-light: #F1F5F9;
+  --color-bg-dark: #0F172A;
+  --color-bg-dark-card: #1E293B;
+  --color-bg-dark-card-alt: #334155;
+  --color-active: #F59E0B;
+  --color-inactive: #94A3B8;
+  --color-cwsi-warning: #F59E0B;
+  --color-cwsi-ok: #4ADE80;
+  --font-family-kanit: 'Kanit', sans-serif;
+}
+
+* {
+  font-family: 'Kanit', sans-serif;
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #94A3B8;
+  border-radius: 3px;
+}
+
+/* Glow effect for active buttons */
+.glow-active {
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.5), 0 0 30px rgba(245, 158, 11, 0.2);
+}
+
+/* Card floating shadow */
+.card-shadow {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.card-shadow-dark {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
