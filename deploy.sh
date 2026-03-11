@@ -131,23 +131,28 @@ info "Systemd service enabled and started ✓"
 
 # ── 8. Nginx reverse proxy ──────────────────────────────────
 info "Configuring Nginx..."
+SUBPATH="/andrographis"
 cat > "$NGINX_CONF" <<EOF
 server {
     listen $HTTP_PORT default_server;
     listen [::]:$HTTP_PORT default_server;
     server_name _;
 
-    # Frontend static files (path quoted for spaces)
-    root "$DIST_DIR";
-    index index.html;
-
-    # SPA fallback
-    location / {
-        try_files \$uri \$uri/ /index.html;
+    # Frontend static files under subpath
+    location ${SUBPATH}/ {
+        alias "$DIST_DIR/";
+        index index.html;
+        try_files \$uri \$uri/ ${SUBPATH}/index.html;
     }
 
-    # API proxy
-    location /api/ {
+    # Redirect bare path to trailing slash
+    location = ${SUBPATH} {
+        return 301 ${SUBPATH}/;
+    }
+
+    # API proxy (under subpath)
+    location ${SUBPATH}/api/ {
+        rewrite ^${SUBPATH}(/.*)$ \$1 break;
         proxy_pass         http://127.0.0.1:$API_PORT;
         proxy_http_version 1.1;
         proxy_set_header   Host              \$host;
@@ -157,8 +162,9 @@ server {
         proxy_read_timeout 300s;
     }
 
-    # WebSocket proxy
-    location /ws {
+    # WebSocket proxy (under subpath)
+    location ${SUBPATH}/ws {
+        rewrite ^${SUBPATH}(/.*)$ \$1 break;
         proxy_pass         http://127.0.0.1:$API_PORT;
         proxy_http_version 1.1;
         proxy_set_header   Upgrade    \$http_upgrade;
@@ -274,7 +280,7 @@ echo -e "${GREEN}═════════════════════
 echo -e "${GREEN}  Deployment Complete!${NC}"
 echo -e "${GREEN}════════════════════════════════════════════${NC}"
 echo ""
-echo -e "  Web UI   : http://${PI_IP}"
+echo -e "  Web UI   : http://${PI_IP}/andrographis/"
 echo -e "  API      : http://${PI_IP}:${API_PORT}/docs"
 echo -e "  MQTT     : ${PI_IP}:1883"
 echo ""

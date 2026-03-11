@@ -6,6 +6,7 @@ import {
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { apiUrl } from '../config.js';
 
 export default function ControlPage() {
   const { isDark } = useTheme();
@@ -25,7 +26,7 @@ export default function ControlPage() {
   useEffect(() => {
     const fetchState = async () => {
       try {
-        const res = await fetch('/api/controls/state', { headers: authHeaders() });
+        const res = await fetch(apiUrl('/api/controls/state'), { headers: authHeaders() });
         if (res.ok) {
           const data = await res.json();
           setControls(data.controls || controls);
@@ -42,7 +43,7 @@ export default function ControlPage() {
   useEffect(() => {
     const fetchSchedule = async () => {
       try {
-        const res = await fetch('/api/controls/schedule', { headers: authHeaders() });
+        const res = await fetch(apiUrl('/api/controls/schedule'), { headers: authHeaders() });
         if (res.ok) {
           const data = await res.json();
           setAutoMode(data.enabled);
@@ -58,7 +59,7 @@ export default function ControlPage() {
   const saveSchedule = async (enabled, start, end) => {
     setScheduleSaving(true);
     try {
-      await fetch('/api/controls/schedule', {
+      await fetch(apiUrl('/api/controls/schedule'), {
         method: 'PUT',
         headers: { ...authHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ enabled, schedule_start: start, schedule_end: end }),
@@ -92,7 +93,7 @@ export default function ControlPage() {
     const nv = !controls[key];
     setControls(p => ({ ...p, [key]: nv }));
     try {
-      await fetch('/api/controls/toggle', {
+      await fetch(apiUrl('/api/controls/toggle'), {
         method: 'POST', headers: authHeaders(),
         body: JSON.stringify({ device: key, state: nv }),
       });
@@ -104,7 +105,7 @@ export default function ControlPage() {
     if (!nv) setControls({ whiteLight: false, purpleLight: false, ventilation: false, masterSwitch: false });
     else setControls(p => ({ ...p, masterSwitch: true }));
     try {
-      await fetch('/api/controls/master', {
+      await fetch(apiUrl('/api/controls/master'), {
         method: 'POST', headers: authHeaders(),
         body: JSON.stringify({ state: nv }),
       });
@@ -168,6 +169,41 @@ export default function ControlPage() {
               onClick={() => lightOn && toggleControl('whiteLight')}
               className={`px-6 py-2.5 rounded-full text-sm font-semibold transition-all ${
                 !lightOn ? isDark ? 'bg-gray-600 text-white' : 'bg-gray-800 text-white' : isDark ? 'bg-bg-dark-card-alt text-gray-400' : 'bg-gray-100 text-gray-500'
+              }`}
+            >OFF</button>
+          </div>
+        </div>
+
+        {/* Purple Light */}
+        <div className={`p-5 rounded-2xl transition-all duration-300 mt-4 ${
+          controls.purpleLight
+            ? isDark ? 'bg-gradient-to-br from-purple-900/60 to-violet-800/40 card-shadow-dark' : 'bg-gradient-to-br from-purple-50 to-violet-100 card-shadow'
+            : isDark ? 'bg-bg-dark-card card-shadow-dark' : 'bg-white card-shadow'
+        }`}>
+          <div className="flex items-center justify-between mb-5">
+            <h3 className={`text-base font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{t.control.purpleLight || 'ไฟแสงสีม่วง'}</h3>
+            <div className={`w-3 h-3 rounded-full ${controls.purpleLight ? 'bg-purple-500' : isDark ? 'bg-gray-600' : 'bg-gray-300'}`} />
+          </div>
+
+          <div className="flex justify-center mb-5">
+            <div className={`w-20 h-20 rounded-2xl flex items-center justify-center transition-all ${
+              controls.purpleLight ? 'bg-purple-500/20' : isDark ? 'bg-bg-dark-card-alt' : 'bg-gray-100'
+            }`}>
+              <Lightbulb className={`w-10 h-10 transition-all ${controls.purpleLight ? 'text-purple-500' : isDark ? 'text-gray-500' : 'text-gray-400'}`} />
+            </div>
+          </div>
+
+          <div className="flex justify-center gap-3">
+            <button
+              onClick={() => !controls.purpleLight && toggleControl('purpleLight')}
+              className={`px-6 py-2.5 rounded-full text-sm font-semibold transition-all ${
+                controls.purpleLight ? 'bg-purple-500 text-white shadow-lg' : isDark ? 'bg-bg-dark-card-alt text-gray-400' : 'bg-gray-100 text-gray-500'
+              }`}
+            >ON</button>
+            <button
+              onClick={() => controls.purpleLight && toggleControl('purpleLight')}
+              className={`px-6 py-2.5 rounded-full text-sm font-semibold transition-all ${
+                !controls.purpleLight ? isDark ? 'bg-gray-600 text-white' : 'bg-gray-800 text-white' : isDark ? 'bg-bg-dark-card-alt text-gray-400' : 'bg-gray-100 text-gray-500'
               }`}
             >OFF</button>
           </div>

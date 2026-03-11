@@ -215,7 +215,7 @@ def _broadcast_ws(data: dict):
             asyncio.run_coroutine_threadsafe(ws.send_text(msg), ws._loop)
         except Exception:
             dead.add(ws)
-    ws_connections -= dead
+    ws_connections.difference_update(dead)
 
 
 def on_connect(client, userdata, flags, rc):

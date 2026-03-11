@@ -4,6 +4,7 @@ import { Leaf, Sliders, BarChart3, Settings, Sun, Moon, LogOut, Bell, X, Check, 
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { apiUrl, wsUrl } from '../config.js';
 
 export default function MainLayout() {
   const { isDark, toggleTheme } = useTheme();
@@ -20,8 +21,8 @@ export default function MainLayout() {
   const fetchNotifications = useCallback(async () => {
     try {
       const [notifRes, countRes] = await Promise.all([
-        fetch('/api/notifications', { headers: authHeaders() }),
-        fetch('/api/notifications/unread-count', { headers: authHeaders() }),
+        fetch(apiUrl('/api/notifications'), { headers: authHeaders() }),
+        fetch(apiUrl('/api/notifications/unread-count'), { headers: authHeaders() }),
       ]);
       if (notifRes.ok) setNotifications(await notifRes.json());
       if (countRes.ok) {
@@ -42,8 +43,7 @@ export default function MainLayout() {
   useEffect(() => {
     let ws;
     try {
-      const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
-      ws = new WebSocket(`${proto}://${window.location.host}/ws/sensors`);
+      ws = new WebSocket(wsUrl('/ws/sensors'));
       ws.onmessage = (evt) => {
         try {
           const msg = JSON.parse(evt.data);
@@ -70,7 +70,7 @@ export default function MainLayout() {
 
   const markRead = async (id) => {
     try {
-      await fetch(`/api/notifications/${id}/read`, { method: 'POST', headers: authHeaders() });
+      await fetch(apiUrl(`/api/notifications/${id}/read`), { method: 'POST', headers: authHeaders() });
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: 1 } : n));
       setUnreadCount(prev => Math.max(0, prev - 1));
     } catch {}
@@ -78,7 +78,7 @@ export default function MainLayout() {
 
   const markAllRead = async () => {
     try {
-      await fetch('/api/notifications/read-all', { method: 'POST', headers: authHeaders() });
+      await fetch(apiUrl('/api/notifications/read-all'), { method: 'POST', headers: authHeaders() });
       setNotifications(prev => prev.map(n => ({ ...n, is_read: 1 })));
       setUnreadCount(0);
     } catch {}
@@ -86,7 +86,7 @@ export default function MainLayout() {
 
   const deleteNotif = async (id) => {
     try {
-      await fetch(`/api/notifications/${id}`, { method: 'DELETE', headers: authHeaders() });
+      await fetch(apiUrl(`/api/notifications/${id}`), { method: 'DELETE', headers: authHeaders() });
       const wasUnread = notifications.find(n => n.id === id && !n.is_read);
       setNotifications(prev => prev.filter(n => n.id !== id));
       if (wasUnread) setUnreadCount(prev => Math.max(0, prev - 1));
@@ -95,7 +95,7 @@ export default function MainLayout() {
 
   const clearAll = async () => {
     try {
-      await fetch('/api/notifications/clear', { method: 'DELETE', headers: authHeaders() });
+      await fetch(apiUrl('/api/notifications/clear'), { method: 'DELETE', headers: authHeaders() });
       setNotifications([]);
       setUnreadCount(0);
     } catch {}

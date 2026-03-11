@@ -7,6 +7,7 @@ import {
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { apiUrl } from '../config.js';
 
 export default function SecurityPage() {
   const { isDark } = useTheme();
@@ -41,7 +42,7 @@ export default function SecurityPage() {
 
   const fetchActivity = async () => {
     try {
-      const res = await fetch('/api/security/login-activity', { headers: authHeaders() });
+      const res = await fetch(apiUrl('/api/security/login-activity'), { headers: authHeaders() });
       if (res.ok) setActivity(await res.json());
     } catch (e) {}
     setActLoading(false);
@@ -51,7 +52,7 @@ export default function SecurityPage() {
     setUsersLoading(true);
     setUsersError(null);
     try {
-      const res = await fetch('/api/users', { headers: authHeaders() });
+      const res = await fetch(apiUrl('/api/users'), { headers: authHeaders() });
       if (res.ok) {
         setUserList(await res.json());
       } else {
@@ -67,7 +68,7 @@ export default function SecurityPage() {
   const fetchAllActivity = async () => {
     setAllActLoading(true);
     try {
-      const res = await fetch('/api/security/all-activity', { headers: authHeaders() });
+      const res = await fetch(apiUrl('/api/security/all-activity'), { headers: authHeaders() });
       if (res.ok) setAllActivity(await res.json());
     } catch (e) {}
     setAllActLoading(false);
@@ -76,7 +77,7 @@ export default function SecurityPage() {
   const fetchPendingUsers = async () => {
     setPendingLoading(true);
     try {
-      const res = await fetch('/api/users/pending', { headers: authHeaders() });
+      const res = await fetch(apiUrl('/api/users/pending'), { headers: authHeaders() });
       if (res.ok) setPendingUsers(await res.json());
     } catch (e) {}
     setPendingLoading(false);
@@ -84,7 +85,7 @@ export default function SecurityPage() {
 
   const approveUser = async (id) => {
     try {
-      await fetch(`/api/users/${id}/approve`, { method: 'POST', headers: authHeaders() });
+      await fetch(apiUrl(`/api/users/${id}/approve`), { method: 'POST', headers: authHeaders() });
       fetchPendingUsers();
       fetchUsers();
     } catch (e) {}
@@ -93,14 +94,14 @@ export default function SecurityPage() {
   const rejectUser = async (id) => {
     if (!confirm(t.security.rejectConfirm || 'Reject and delete this user?')) return;
     try {
-      await fetch(`/api/users/${id}/reject`, { method: 'POST', headers: authHeaders() });
+      await fetch(apiUrl(`/api/users/${id}/reject`), { method: 'POST', headers: authHeaders() });
       fetchPendingUsers();
     } catch (e) {}
   };
 
   const updateUserRole = async (userId, role) => {
     try {
-      await fetch(`/api/users/${userId}`, { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ role }) });
+      await fetch(apiUrl(`/api/users/${userId}`), { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ role }) });
       fetchUsers();
     } catch (e) {}
   };
@@ -108,7 +109,7 @@ export default function SecurityPage() {
   const deleteUser = async (userId) => {
     if (!confirm(t.security.deleteUserConfirm || 'Delete this user?')) return;
     try {
-      await fetch(`/api/users/${userId}`, { method: 'DELETE', headers: authHeaders() });
+      await fetch(apiUrl(`/api/users/${userId}`), { method: 'DELETE', headers: authHeaders() });
       fetchUsers();
     } catch (e) {}
   };
@@ -118,7 +119,7 @@ export default function SecurityPage() {
     if (pwForm.new_password.length < 6) { setPwMsg({ type: 'error', text: t.security.passwordTooShort }); return; }
     setPwLoading(true); setPwMsg(null);
     try {
-      const res = await fetch('/api/auth/change-password', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ current_password: pwForm.current_password, new_password: pwForm.new_password }) });
+      const res = await fetch(apiUrl('/api/auth/change-password'), { method: 'POST', headers: authHeaders(), body: JSON.stringify({ current_password: pwForm.current_password, new_password: pwForm.new_password }) });
       if (res.ok) { setPwMsg({ type: 'success', text: t.security.changeSuccess }); setPwForm({ current_password: '', new_password: '', confirm: '' }); }
       else { let errMsg = t.security.changeFail; try { const data = await res.json(); errMsg = data.detail || errMsg; } catch {} setPwMsg({ type: 'error', text: errMsg }); }
     } catch (e) { setPwMsg({ type: 'error', text: t.security.connectFail }); }
@@ -127,7 +128,7 @@ export default function SecurityPage() {
 
   const handleLogoutAll = async () => {
     if (!confirm(t.security.logoutAllConfirm)) return;
-    try { await fetch('/api/security/logout-all', { method: 'POST', headers: authHeaders() }); logout(); } catch (e) {}
+    try { await fetch(apiUrl('/api/security/logout-all'), { method: 'POST', headers: authHeaders() }); logout(); } catch (e) {}
   };
 
   const formatDate = (iso) => { try { return new Date(iso).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' }); } catch { return iso; } };

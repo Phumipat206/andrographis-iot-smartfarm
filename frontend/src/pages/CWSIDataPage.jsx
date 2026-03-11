@@ -10,6 +10,7 @@ import {
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { apiUrl } from '../config.js';
 
 export default function CWSIDataPage() {
   const { isDark } = useTheme();
@@ -27,7 +28,7 @@ export default function CWSIDataPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/sensors/cwsi-history?period=today', { headers: authHeaders() });
+      const res = await fetch(apiUrl('/api/sensors/cwsi-history?period=today'), { headers: authHeaders() });
       if (res.status === 401) { setError(t.cwsi.loginAgain); return; }
       if (!res.ok) { setError(t.cwsi.loadFail); return; }
       const data = await res.json();

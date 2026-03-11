@@ -74,13 +74,15 @@ def _start_mqtt_from_db():
 
 
 def _sync_controls_to_mqtt():
-    """Re-publish persisted control states to MQTT so hardware stays in sync."""
+    """Re-publish persisted control states to MQTT so hardware stays in sync (runs in background thread)."""
     import time as _t
-    _t.sleep(2)  # Wait for MQTT to connect
-    for device in ["whiteLight", "purpleLight", "ventilation"]:
-        if control_store.get(device):
-            publish_control(device, True)
-    print(f"🔄 Synced control states to MQTT: {control_store}")
+    def _sync():
+        _t.sleep(2)  # Wait for MQTT to connect
+        for device in ["whiteLight", "purpleLight", "ventilation"]:
+            if control_store.get(device):
+                publish_control(device, True)
+        print(f"🔄 Synced control states to MQTT: {control_store}")
+    threading.Thread(target=_sync, daemon=True).start()
 
 
 # ─── Automation Engine ───────────────────────────────────────
@@ -1277,6 +1279,16 @@ def mark_all_notifications_read(
     return {"success": True}
 
 
+@app.delete("/api/notifications/clear")
+def clear_all_notifications(
+    current_user: dict = Depends(get_current_user),
+    db: sqlite3.Connection = Depends(get_db),
+):
+    db.execute("DELETE FROM notifications")
+    db.commit()
+    return {"success": True}
+
+
 @app.delete("/api/notifications/{notif_id}")
 def delete_notification(
     notif_id: int,
@@ -1284,16 +1296,6 @@ def delete_notification(
     db: sqlite3.Connection = Depends(get_db),
 ):
     db.execute("DELETE FROM notifications WHERE id = ?", (notif_id,))
-    db.commit()
-    return {"success": True}
-
-
-@app.delete("/api/notifications/clear")
-def clear_all_notifications(
-    current_user: dict = Depends(get_current_user),
-    db: sqlite3.Connection = Depends(get_db),
-):
-    db.execute("DELETE FROM notifications")
     db.commit()
     return {"success": True}
 

@@ -9,7 +9,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 1440  # 24 hours
 DATABASE_URL = os.getenv("DATABASE_URL", "smartfarm.db")
 
 # MQTT Config
-MQTT_BROKER = os.getenv("MQTT_BROKER", "broker.emqx.io")
+MQTT_BROKER = os.getenv("MQTT_BROKER", "localhost")
 MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
 MQTT_USERNAME = os.getenv("MQTT_USERNAME", "")
 MQTT_PASSWORD = os.getenv("MQTT_PASSWORD", "")

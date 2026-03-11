@@ -629,5 +629,7 @@ This project is developed for academic purposes by the **College of Engineering 
 
 <div align="center">
   <strong>Andrographis Smart Farm v3.0.0</strong><br>
-  Built with ❤️ by COE AI WU — Walailak University
+  Built with  by COE AI WU — Walailak University
 </div>
+
+อิอิ

@@ -3,6 +3,7 @@ import { Lightbulb, Droplets, SunDim, MapPin, Thermometer, Waves, Leaf, Navigati
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { apiUrl, wsUrl } from '../config.js';
 
 export default function DashboardPage() {
   const { isDark } = useTheme();
@@ -29,9 +30,7 @@ export default function DashboardPage() {
     let reconnectTimer;
 
     const connectWs = () => {
-      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${wsProtocol}//${window.location.host}/ws/sensors`;
-      ws = new WebSocket(wsUrl);
+      ws = new WebSocket(wsUrl('/ws/sensors'));
       wsRef.current = ws;
 
       ws.onopen = () => {
@@ -93,7 +92,7 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch('/api/sensors/dashboard', {
+        const res = await fetch(apiUrl('/api/sensors/dashboard'), {
           headers: authHeaders(),
         });
         if (res.ok) {

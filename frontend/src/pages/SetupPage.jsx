@@ -11,6 +11,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useNavigate } from 'react-router-dom';
+import { BASE_PATH, apiUrl } from '../config.js';
 
 export default function SetupPage() {
   const { isDark } = useTheme();
@@ -68,7 +69,7 @@ export default function SetupPage() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const res = await fetch('/api/farm/stats', { headers: authHeaders() });
+        const res = await fetch(apiUrl('/api/farm/stats'), { headers: authHeaders() });
         if (res.ok) setStats(await res.json());
       } catch (e) {}
     };
@@ -79,7 +80,7 @@ export default function SetupPage() {
   const fetchNotifSettings = async () => {
     setNotifLoading(true);
     try {
-      const res = await fetch('/api/notifications/settings', { headers: authHeaders() });
+      const res = await fetch(apiUrl('/api/notifications/settings'), { headers: authHeaders() });
       if (res.ok) { const data = await res.json(); setNotifSettings(data); }
     } catch (e) {}
     setNotifLoading(false);
@@ -89,7 +90,7 @@ export default function SetupPage() {
     const updated = { ...notifSettings, [key]: !notifSettings[key] };
     setNotifSettings(updated);
     try {
-      await fetch('/api/notifications/settings', {
+      await fetch(apiUrl('/api/notifications/settings'), {
         method: 'PUT', headers: authHeaders(), body: JSON.stringify(updated),
       });
     } catch (e) { setNotifSettings(notifSettings); }
@@ -98,7 +99,7 @@ export default function SetupPage() {
   // Fetch MQTT config
   const fetchMqttConfig = async () => {
     try {
-      const res = await fetch('/api/config', { headers: authHeaders() });
+      const res = await fetch(apiUrl('/api/config'), { headers: authHeaders() });
       if (res.ok) {
         const data = await res.json();
         setMqttConfig(data.mqtt || { broker: 'localhost', port: '1883', username: '', password: '' });
@@ -116,7 +117,7 @@ export default function SetupPage() {
         ...dashboardDevices.map(d => ({ ...d, category: 'dashboard', type: d.type || 'sensor' })),
         ...controlDevices.map(d => ({ ...d, category: 'control', type: d.type || 'switch' })),
       ];
-      await fetch('/api/config', {
+      await fetch(apiUrl('/api/config'), {
         method: 'PUT', headers: authHeaders(),
         body: JSON.stringify({ mqtt: mqttConfig, devices: allDevices }),
       });
@@ -143,7 +144,7 @@ export default function SetupPage() {
   // Domain config
   const fetchDomainConfig = async () => {
     try {
-      const res = await fetch('/api/config/domain', { headers: authHeaders() });
+      const res = await fetch(apiUrl('/api/config/domain'), { headers: authHeaders() });
       if (res.ok) setDomainConfig(await res.json());
     } catch (e) {}
   };
@@ -151,7 +152,7 @@ export default function SetupPage() {
   const saveDomainConfig = async () => {
     setDomainSaving(true);
     try {
-      await fetch('/api/config/domain', {
+      await fetch(apiUrl('/api/config/domain'), {
         method: 'PUT', headers: authHeaders(), body: JSON.stringify(domainConfig),
       });
     } catch (e) {}
@@ -162,7 +163,7 @@ export default function SetupPage() {
   const fetchReports = async (period) => {
     setReportLoading(true);
     try {
-      const res = await fetch(`/api/reports/summary?period=${period}`, { headers: authHeaders() });
+      const res = await fetch(apiUrl(`/api/reports/summary?period=${period}`), { headers: authHeaders() });
       if (res.ok) setReportData(await res.json());
     } catch (e) {}
     setReportLoading(false);
@@ -170,7 +171,7 @@ export default function SetupPage() {
 
   const fetchSystemHealth = async () => {
     try {
-      const res = await fetch('/api/system/health', { headers: authHeaders() });
+      const res = await fetch(apiUrl('/api/system/health'), { headers: authHeaders() });
       if (res.ok) setSystemHealth(await res.json());
     } catch (e) {}
   };
@@ -178,7 +179,7 @@ export default function SetupPage() {
   // Mock mode
   const fetchMockStatus = async () => {
     try {
-      const res = await fetch('/api/mock/status', { headers: authHeaders() });
+      const res = await fetch(apiUrl('/api/mock/status'), { headers: authHeaders() });
       if (res.ok) { const d = await res.json(); setMockEnabled(d.enabled); }
     } catch (e) {}
   };
@@ -186,7 +187,7 @@ export default function SetupPage() {
   const toggleMock = async () => {
     setMockLoading(true);
     try {
-      const res = await fetch('/api/mock/toggle', { method: 'POST', headers: authHeaders() });
+      const res = await fetch(apiUrl('/api/mock/toggle'), { method: 'POST', headers: authHeaders() });
       if (res.ok) { const d = await res.json(); setMockEnabled(d.enabled); }
     } catch (e) {}
     setMockLoading(false);
@@ -196,7 +197,7 @@ export default function SetupPage() {
   const fetchSensorTable = async (page = 1, filter = '') => {
     setSensorTableLoading(true);
     try {
-      const url = `/api/sensor-data/table?page=${page}&per_page=50&sensor_type=${encodeURIComponent(filter)}`;
+      const url = apiUrl(`/api/sensor-data/table?page=${page}&per_page=50&sensor_type=${encodeURIComponent(filter)}`);
       const res = await fetch(url, { headers: authHeaders() });
       if (res.ok) {
         const d = await res.json();
@@ -211,7 +212,7 @@ export default function SetupPage() {
 
   const handleEditSensorRow = async (id) => {
     try {
-      await fetch(`/api/sensor-data/${id}`, {
+      await fetch(apiUrl(`/api/sensor-data/${id}`), {
         method: 'PUT', headers: authHeaders(), body: JSON.stringify({ value: parseFloat(editValue) }),
       });
       setEditingRow(null);
@@ -222,17 +223,25 @@ export default function SetupPage() {
   const handleDeleteSensorRow = async (id) => {
     if (!confirm('Delete this data row?')) return;
     try {
-      await fetch(`/api/sensor-data/${id}`, { method: 'DELETE', headers: authHeaders() });
+      await fetch(apiUrl(`/api/sensor-data/${id}`), { method: 'DELETE', headers: authHeaders() });
       fetchSensorTable(sensorTablePage, sensorTableFilter);
     } catch (e) {}
   };
 
-  const handleDownloadCSV = () => {
-    const url = `/api/sensor-data/download-csv?sensor_type=${encodeURIComponent(sensorTableFilter)}`;
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'sensor_data.csv';
-    document.body.appendChild(a); a.click(); a.remove();
+  const handleDownloadCSV = async () => {
+    try {
+      const res = await fetch(apiUrl(`/api/sensor-data/download-csv?sensor_type=${encodeURIComponent(sensorTableFilter)}`), {
+        headers: authHeaders(),
+      });
+      if (!res.ok) { alert('Download failed'); return; }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'sensor_data.csv';
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) { alert('Download failed'); }
   };
 
   const handleUploadCSV = async (e) => {
@@ -240,7 +249,7 @@ export default function SetupPage() {
     if (!file) return;
     const text = await file.text();
     try {
-      const res = await fetch('/api/sensor-data/upload-csv', {
+      const res = await fetch(apiUrl('/api/sensor-data/upload-csv'), {
         method: 'POST',
         headers: { ...authHeaders(), 'Content-Type': 'text/csv' },
         body: text,
@@ -257,7 +266,7 @@ export default function SetupPage() {
   // Editable stats
   const saveStats = async () => {
     try {
-      await fetch('/api/farm/stats', {
+      await fetch(apiUrl('/api/farm/stats'), {
         method: 'PUT', headers: authHeaders(), body: JSON.stringify(statsForm),
       });
       setStats(statsForm);
@@ -267,7 +276,7 @@ export default function SetupPage() {
 
   const handleDownloadData = async () => {
     try {
-      const res = await fetch('/api/sensors/cwsi-history?period=month', { headers: authHeaders() });
+      const res = await fetch(apiUrl('/api/sensors/cwsi-history?period=month'), { headers: authHeaders() });
       if (res.ok) {
         const data = await res.json();
         const rows = (data.history || []).map(r => `${r.time},${r.plot1},${r.plot2}`);
