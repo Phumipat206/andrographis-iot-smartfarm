@@ -1,6 +1,14 @@
 # 🌿 Andrographis Smart Farm
 
-> ระบบจัดการฟาร์มอัจฉริยะสำหรับปลูกฟ้าทะลายโจรแบบ Hydroponic  
+[![Python](https://img.shields.io/badge/Python-3.12-blue?logo=python&logoColor=white)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.104-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev)
+[![Vite](https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white)](https://vitejs.dev)
+[![MQTT](https://img.shields.io/badge/MQTT-Mosquitto-660066?logo=eclipsemosquitto&logoColor=white)](https://mosquitto.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Tests](https://img.shields.io/badge/Tests-99%20passed-brightgreen)](TEST_CASE_REPORT.md)
+
+> 🏫 ระบบจัดการฟาร์มอัจฉริยะสำหรับปลูกฟ้าทะลายโจรแบบ Hydroponic  
 > Smart farm management system for Hydroponic Andrographis cultivation  
 > **Built by COE AI WU — Walailak University**
 
@@ -22,6 +30,10 @@
 - [Frontend Pages](#frontend-pages)
 - [Configuration](#configuration)
 - [Troubleshooting](#troubleshooting)
+- [Testing](#testing)
+- [Environment Variables](#environment-variables)
+- [ESP32 Reference](#esp32-reference)
+- [Contributing](#contributing)
 - [License](#license)
 
 ---
@@ -621,15 +633,181 @@ vcgencmd measure_temp
 
 ---
 
+## Testing
+
+The project includes **99 automated test cases** covering all API endpoints.
+
+### Run Tests
+
+```bash
+cd backend
+source venv/bin/activate
+pip install pytest httpx pytest-html
+
+# Run all tests (verbose)
+python -m pytest test_api.py -v
+
+# Run specific category
+python -m pytest test_api.py -v -k "TestAuth"        # Authentication
+python -m pytest test_api.py -v -k "TestControls"     # Device Controls
+python -m pytest test_api.py -v -k "TestWebSocket"    # WebSocket
+python -m pytest test_api.py -v -k "TestSecurity"     # Security
+python -m pytest test_api.py -v -k "TestIntegration"  # Integration
+
+# Generate HTML report
+python -m pytest test_api.py -v --html=test_report.html --self-contained-html
+```
+
+### Test Categories
+
+| Category | Tests | Description |
+|---|:---:|---|
+| TC-AUTH | 12 | Login, Register, Token, Password |
+| TC-SENSOR | 8 | Dashboard, History, CWSI |
+| TC-CTRL | 10 | Toggle, Master, Schedule |
+| TC-AUTO | 8 | Rules CRUD, Toggle |
+| TC-USER | 8 | List, Approve, Reject, Delete |
+| TC-NOTIF | 8 | CRUD, Settings, Unread Count |
+| TC-CONFIG | 7 | MQTT, Domain, Farm Stats |
+| TC-DATA | 10 | CRUD, CSV Upload/Download, Pagination |
+| TC-SYS | 7 | Health, Reports, Export, Mock Mode |
+| TC-SEC | 5 | 401/403, Activity Logs |
+| TC-WS | 3 | Connection, Data Structure, Ping |
+| TC-EDGE | 10 | Validation, Boundary Cases |
+| TC-INTEG | 3 | End-to-end Workflows |
+
+> 📄 See [TEST_CASE_REPORT.md](TEST_CASE_REPORT.md) for the full detailed report.
+
+---
+
+## Environment Variables
+
+The system uses **SQLite database config** instead of `.env` files. All settings are configurable via the web UI.
+
+| Setting | Default | Location |
+|---|---|---|
+| `SECRET_KEY` | Auto-generated | `backend/config.py` |
+| `DATABASE_URL` | `smartfarm.db` | `backend/config.py` |
+| `MQTT_BROKER` | `localhost` | Web UI → Settings → MQTT |
+| `MQTT_PORT` | `1883` | Web UI → Settings → MQTT |
+| `MQTT_USERNAME` | _(empty)_ | Web UI → Settings → MQTT |
+| `MQTT_PASSWORD` | _(empty)_ | Web UI → Settings → MQTT |
+| Backend Port | `8001` | `uvicorn --port 8001` |
+| Frontend Port | `5173` (dev) / `80` (prod) | `vite.config.js` / Nginx |
+| `BASE_PATH` | `/andrographis` | `frontend/src/config.js` |
+
+### Changing SECRET_KEY (Recommended for Production)
+
+```python
+# backend/config.py
+import secrets
+SECRET_KEY = secrets.token_hex(32)  # Generate a random key
+```
+
+---
+
+## ESP32 Reference
+
+The ESP32 microcontrollers are responsible for **hardware I/O** (sensors + actuators). Below is the MQTT contract between ESP32 and the backend.
+
+### ESP32 → Backend (Sensor Data)
+
+ESP32 publishes sensor readings to MQTT topics:
+
+```cpp
+// Arduino/ESP32 example
+#include <PubSubClient.h>
+
+// Publish humidity reading
+float humidity = dht.readHumidity();
+client.publish("farm/sensor/humidity", String(humidity).c_str());
+
+// Publish CWSI as JSON
+String cwsi = "{\"value\":" + String(cwsiValue) + ",\"index\":" + String(cwsiIndex) + "}";
+client.publish("farm/sensor/cwsi/1", cwsi.c_str());
+
+// Publish leaf temperature
+client.publish("farm/sensor/leaf_temp/1", String(leafTemp).c_str());
+
+// Publish water level
+client.publish("farm/sensor/water_level/1", String(waterLevel).c_str());
+```
+
+### Backend → ESP32 (Control Commands)
+
+ESP32 subscribes to control topics and activates GPIO:
+
+```cpp
+// Subscribe to control topics
+client.subscribe("farm/light/white");
+client.subscribe("farm/light/purple");
+client.subscribe("farm/fan/ventilation");
+
+// Callback handler
+void callback(char* topic, byte* payload, unsigned int length) {
+  String message = "";
+  for (int i = 0; i < length; i++) message += (char)payload[i];
+
+  if (String(topic) == "farm/light/white") {
+    digitalWrite(WHITE_LIGHT_PIN, message == "ON" ? HIGH : LOW);
+  }
+  if (String(topic) == "farm/light/purple") {
+    digitalWrite(PURPLE_LIGHT_PIN, message == "ON" ? HIGH : LOW);
+  }
+  if (String(topic) == "farm/fan/ventilation") {
+    digitalWrite(FAN_PIN, message == "ON" ? HIGH : LOW);
+  }
+}
+```
+
+### Wiring Reference
+
+| Component | ESP32 GPIO | Description |
+|---|---|---|
+| DHT22 (Humidity) | GPIO 4 | Temperature & humidity sensor |
+| BH1750 (Lux) | I2C (SDA/SCL) | Light intensity sensor |
+| MLX90614 (Leaf Temp) | I2C (SDA/SCL) | Infrared leaf temperature |
+| Water Level Sensor | GPIO 34 (ADC) | Analog water level |
+| White Light Relay | GPIO 26 | Relay module (active LOW) |
+| Purple Light Relay | GPIO 27 | Relay module (active LOW) |
+| Fan Relay | GPIO 25 | Relay module (active LOW) |
+
+> ⚠️ GPIO pin numbers are examples. Adjust according to your actual wiring.
+
+---
+
+## Contributing
+
+1. **Fork** the repository
+2. Create a feature branch: `git checkout -b feature/my-feature`
+3. Commit changes: `git commit -m "✨ Add my feature"`
+4. Push to the branch: `git push origin feature/my-feature`
+5. Open a **Pull Request**
+
+### Code Style
+- **Backend**: Follow PEP 8 conventions
+- **Frontend**: ESLint with default React rules
+- **Commits**: Use [Gitmoji](https://gitmoji.dev/) prefixes (🌿 🔧 ✨ 🐛 📝)
+
+### Reporting Issues
+Please include:
+- OS and Python/Node version
+- Steps to reproduce
+- Expected vs actual behavior
+- Error logs (if any)
+
+---
+
 ## License
 
-This project is developed for academic purposes by the **College of Engineering (COE), AI Lab, Walailak University**.
+This project is licensed under the [MIT License](LICENSE).
+
+Developed for academic purposes by the **College of Engineering (COE), AI Lab, Walailak University**.
 
 ---
 
 <div align="center">
-  <strong>Andrographis Smart Farm v3.0.0</strong><br>
-  Built with  by COE AI WU — Walailak University
+  <strong>🌿 Andrographis Smart Farm v3.0.0</strong><br>
+  Built with ❤️ by COE AI WU — Walailak University<br><br>
+  <a href="#-andrographis-smart-farm">⬆ Back to Top</a>
 </div>
-
-อิอิ
